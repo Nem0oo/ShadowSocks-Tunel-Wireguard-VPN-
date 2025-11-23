@@ -1,0 +1,51 @@
+# 📛 Nom du workflow
+name: Build and Deploy Hugo Site
+
+# 🚀 Ce workflow se déclenche à chaque push sur main
+on:
+  push:
+    branches:
+      - main
+
+# ⚙️ Jobs à exécuter
+jobs:
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest  # Machine virtuelle Linux
+
+    steps:
+      # 🧾 Étape 1 – Récupère le code de ton repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 🐳 Étape 2 – Installe Docker CLI (déjà présent dans l'image GitHub)
+      # Pas besoin d'étape spéciale ici
+
+      # 🐳 Étape 3 – Build de l'image Docker qui sert le site
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/shadowsocks-wireguard:latest .
+
+      # 🔐 Étape 5 – Login Docker Hub (avec secrets GitHub)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 📦 Étape 6 – Push de l'image
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/shadowsocks-wireguard:latest
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATEKEY_SS_WIREGUARD }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan ${{ secrets.DOMAIN }} >> ~/.ssh/known_hosts
+        shell: bash
+
+      - name: Deploy via SSH
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.DOCKERHUB_USERNAME }}@${{ secrets.DOMAIN }} './srv/shadowsocks-wireguard/shadowsocks-wireguard.sh'
