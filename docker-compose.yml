@@ -1,6 +1,6 @@
 services:
   vpn-gateway:
-    image: nem0oo/shadowsocks-wireguard:latest
+    build: .
     container_name: vpn-gateway
     restart: unless-stopped
     privileged: true
