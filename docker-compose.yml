@@ -1,0 +1,33 @@
+services:
+  vpn-gateway:
+    build: .
+    container_name: vpn-gateway
+    restart: unless-stopped
+    privileged: true
+
+    volumes:
+      - ./conf/wg0.conf:/etc/wireguard/wg0.conf:ro
+
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
+    environment:
+      SS_PASSWORD: ${SS_PASSWORD}
+      SS_METHOD: ${SS_METHOD}
+      PLUGIN_OPTS: ${PLUGIN_OPTS}
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST}
+      VIRTUAL_PORT: ${VIRTUAL_PORT}
+    expose: 
+      - "8388"
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    name: reseau_interne
+    external: true
